@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+venv
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# CI/CD
+.github/
+
+# Local files
+.env
+*.log
+logs/
+statement_sign.*
+*.csv
+
+# Documentation
+docs/
+README.md
+
+# Tests (не включаем в production образ)
+tests/
+demo_scheduler.py
+
+# Development files
+poetry.lock
