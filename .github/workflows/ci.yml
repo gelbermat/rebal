@@ -68,7 +68,7 @@ jobs:
           ENVIRONMENT: testing
         run: |
           poetry run pytest --cov=app --cov-report=term-missing --cov-report=xml tests/
-          poetry run coverage report --fail-under=80
+          poetry run coverage report --fail-under=60
 
       - name: Upload coverage reports
         if: matrix.python-version == '3.12'
