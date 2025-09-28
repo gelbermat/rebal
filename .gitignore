@@ -106,3 +106,8 @@ alembic/versions/*.py
 # Poetry
 # poetry.lock should be committed for reproducible builds
 # poetry.lock
+
+# Personal statement files (should not be in repository)
+statement_sign.xls
+statement_sign_merged.csv
+*statement_sign*
