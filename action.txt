@@ -1,0 +1,387 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.13, pytest-7.4.4, pluggy-1.6.0
+rootdir: /home/runner/work/rebal/rebal
+configfile: pytest.ini
+plugins: anyio-3.7.1, asyncio-0.21.2, cov-4.1.0
+asyncio: mode=Mode.STRICT
+collected 92 items
+
+tests/test_config.py F............                                       [ 14%]
+tests/test_data_manager.py ........                                      [ 22%]
+tests/test_main.py ...                                                   [ 26%]
+tests/test_scheduler_config.py .......                                   [ 33%]
+tests/test_utils.py FFFF.FEEEFF                                          [ 45%]
+tests/modules/test_marketdata.py ......                                  [ 52%]
+tests/modules/test_marketdata_service.py ..........                      [ 63%]
+tests/modules/test_portfolio.py .......                                  [ 70%]
+tests/modules/test_portfolio_service.py ............                     [ 83%]
+tests/modules/test_reporting.py ..........                               [ 94%]
+tests/modules/test_strategy.py .....                                     [100%]
+
+==================================== ERRORS ====================================
+_______ ERROR at setup of TestMergeCsvTables.test_merge_csv_tables_basic _______
+
+self = <tests.test_utils.TestMergeCsvTables object at 0x7fec0be17a50>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+temp_output_file = '/tmp/tmpy13v1qjs.csv'
+
+    @pytest.fixture
+    def csv_file(self, test_data_path, temp_output_file):
+>       convert_xls_to_csv(str(test_data_path), temp_output_file)
+
+tests/test_utils.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = '/tmp/tmpy13v1qjs.csv', sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+________ ERROR at setup of TestMergeCsvTables.test_find_table_sections _________
+
+self = <tests.test_utils.TestMergeCsvTables object at 0x7fec0bda6410>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+temp_output_file = '/tmp/tmphaio5co4.csv'
+
+    @pytest.fixture
+    def csv_file(self, test_data_path, temp_output_file):
+>       convert_xls_to_csv(str(test_data_path), temp_output_file)
+
+tests/test_utils.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = '/tmp/tmphaio5co4.csv', sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+________ ERROR at setup of TestMergeCsvTables.test_merged_csv_structure ________
+
+self = <tests.test_utils.TestMergeCsvTables object at 0x7fec0bda65d0>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+temp_output_file = '/tmp/tmpddne8n6n.csv'
+
+    @pytest.fixture
+    def csv_file(self, test_data_path, temp_output_file):
+>       convert_xls_to_csv(str(test_data_path), temp_output_file)
+
+tests/test_utils.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = '/tmp/tmpddne8n6n.csv', sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+=================================== FAILURES ===================================
+______________________ TestSettings.test_default_settings ______________________
+
+self = <tests.test_config.TestSettings object at 0x7fec1d319190>
+
+    def test_default_settings(self):
+        """Тест настроек по умолчанию"""
+        # Изолируем от переменных окружения, но не от .env файла
+        with patch.dict(os.environ, {}, clear=False):
+            test_settings = Settings()
+    
+            assert test_settings.app_name == "Rebalancer"
+            assert test_settings.version == "0.1.0"
+>           assert test_settings.environment == "development"
+E           AssertionError: assert 'testing' == 'development'
+E             - development
+E             + testing
+
+tests/test_config.py:21: AssertionError
+_________________________ TestXlsToCsv.test_xls_exists _________________________
+
+self = <tests.test_utils.TestXlsToCsv object at 0x7fec19d6d0d0>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+
+    def test_xls_exists(self, test_data_path):
+>       assert test_data_path.exists(), f"Тестовый файл {test_data_path} не найден"
+E       AssertionError: Тестовый файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+E       assert False
+E        +  where False = <bound method Path.exists of PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')>()
+E        +    where <bound method Path.exists of PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')> = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls').exists
+
+tests/test_utils.py:38: AssertionError
+__________________ TestXlsToCsv.test_convert_xls_to_csv_basic __________________
+
+self = <tests.test_utils.TestXlsToCsv object at 0x7fec1c1e9d90>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+temp_output_file = '/tmp/tmp_pbbjvec.csv'
+
+    def test_convert_xls_to_csv_basic(self, test_data_path, temp_output_file):
+>       result_file = convert_xls_to_csv(str(test_data_path), temp_output_file)
+
+tests/test_utils.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = '/tmp/tmp_pbbjvec.csv', sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+________________ TestXlsToCsv.test_convert_xls_to_csv_auto_name ________________
+
+self = <tests.test_utils.TestXlsToCsv object at 0x7fec0bdfae90>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+
+    def test_convert_xls_to_csv_auto_name(self, test_data_path):
+>       result_file = convert_xls_to_csv(str(test_data_path))
+
+tests/test_utils.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = None, sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+________________ TestXlsToCsv.test_convert_xls_content_validity ________________
+
+self = <tests.test_utils.TestXlsToCsv object at 0x7fec0bdf8910>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+temp_output_file = '/tmp/tmpvzn4rflz.csv'
+
+    def test_convert_xls_content_validity(self, test_data_path, temp_output_file):
+>       convert_xls_to_csv(str(test_data_path), temp_output_file)
+
+tests/test_utils.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = '/tmp/tmpvzn4rflz.csv', sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+___________________ TestXlsToCsv.test_analyze_xls_structure ____________________
+
+self = <tests.test_utils.TestXlsToCsv object at 0x7fec0be16490>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+caplog = <_pytest.logging.LogCaptureFixture object at 0x7fec0bd9d910>
+
+    def test_analyze_xls_structure(self, test_data_path, caplog):
+        """Тест анализа структуры XLS файла"""
+        import logging
+    
+        caplog.set_level(logging.INFO)
+    
+        analyze_xls_structure(str(test_data_path))
+    
+        # Проверяем логи вместо stdout
+        log_messages = "\n".join([record.message for record in caplog.records])
+        assert "АНАЛИЗ СТРУКТУРЫ ФАЙЛА" in log_messages
+>       assert "строк x" in log_messages
+E       assert 'строк x' in "\n=== АНАЛИЗ СТРУКТУРЫ ФАЙЛА /home/runner/work/rebal/rebal/statement_sign.xls ===\n❌ Ошибка при анализе файла: [Errno 2] No such file or directory: '/home/runner/work/rebal/rebal/statement_sign.xls'"
+
+tests/test_utils.py:89: AssertionError
+------------------------------ Captured log call -------------------------------
+INFO     utils.xls_to_csv:xls_to_csv.py:58 
+=== АНАЛИЗ СТРУКТУРЫ ФАЙЛА /home/runner/work/rebal/rebal/statement_sign.xls ===
+ERROR    utils.xls_to_csv:xls_to_csv.py:84 ❌ Ошибка при анализе файла: [Errno 2] No such file or directory: '/home/runner/work/rebal/rebal/statement_sign.xls'
+______________________ TestIntegration.test_full_workflow ______________________
+
+self = <tests.test_utils.TestIntegration object at 0x7fec0bf62810>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+
+    def test_full_workflow(self, test_data_path):
+        # Шаг 1: Конвертация XLS в CSV
+>       csv_file = convert_xls_to_csv(str(test_data_path))
+
+tests/test_utils.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = None, sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+__________________ TestIntegration.test_file_sizes_reasonable __________________
+
+self = <tests.test_utils.TestIntegration object at 0x7fec0bca3a10>
+test_data_path = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')
+
+    def test_file_sizes_reasonable(self, test_data_path):
+        "Проверяем что размеры файлов разумные."
+>       csv_file = convert_xls_to_csv(str(test_data_path))
+
+tests/test_utils.py:180: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input_file = '/home/runner/work/rebal/rebal/statement_sign.xls'
+output_file = None, sheet_name = 'Account_Statement_auto_EXC'
+encoding = 'utf-8-sig'
+
+    def convert_xls_to_csv(
+        input_file: str,
+        output_file: Optional[str] = None,
+        sheet_name: str = "Account_Statement_auto_EXC",
+        encoding: str = "utf-8-sig",
+    ) -> str:
+        """Конвертирует XLS файл в CSV формат."""
+    
+        input_path = Path(input_file)
+    
+        if not input_path.exists():
+>           raise FileNotFoundError(f"Файл {input_file} не найден")
+E           FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+
+utils/xls_to_csv.py:27: FileNotFoundError
+
+---------- coverage: platform linux, python 3.11.13-final-0 ----------
+Name                                 Stmts   Miss  Cover   Missing
+------------------------------------------------------------------
+app/__init__.py                          0      0   100%
+app/config.py                          115      2    98%   32, 118
+app/logging_config.py                   28      7    75%   21, 34-48
+app/main.py                             43     43     0%   1-98
+app/modules/__init__.py                  0      0   100%
+app/modules/importer/__init__.py         0      0   100%
+app/modules/importer/api.py             41     41     0%   1-141
+app/modules/importer/models.py          37     37     0%   1-59
+app/modules/importer/schemas.py         28     28     0%   1-42
+app/modules/importer/service.py        140    140     0%   1-294
+app/modules/marketdata/__init__.py       0      0   100%
+app/modules/marketdata/api.py           85     61    28%   16, 26-30, 40-46, 54-62, 73-102, 110-116, 125-131, 139-145, 153-157
+app/modules/marketdata/models.py        20      0   100%
+app/modules/marketdata/schemas.py       36      0   100%
+app/modules/marketdata/service.py      145     90    38%   26-28, 34-64, 74-103, 107-133, 137-165, 170, 229, 238-289, 293, 297-339, 347
+app/modules/portfolio/__init__.py        0      0   100%
+app/modules/portfolio/api.py            32     13    59%   21, 29, 38, 45-48, 55-58, 65, 73
+app/modules/portfolio/models.py         26      0   100%
+app/modules/portfolio/schemas.py        41      0   100%
+app/modules/portfolio/service.py        43      3    93%   62, 73, 79
+app/modules/reporting/__init__.py        7      4    43%   9-11, 15-17
+app/modules/reporting/api.py            83     60    28%   30, 39-52, 63-69, 78-90, 99-111, 120-132, 143-193, 204-238
+app/modules/reporting/models.py        123      1    99%   54
+app/modules/reporting/schemas.py       138      3    98%   21-23
+app/modules/reporting/service.py       185     17    91%   73, 206, 215, 221, 267, 296-310, 403-407
+app/modules/strategy/__init__.py         6      0   100%
+app/modules/strategy/api.py             80     51    36%   22-24, 36-45, 54-55, 63-66, 78-89, 99-105, 117-127, 136-149, 166-167, 175-176, 186-202
+app/modules/strategy/models.py          55      0   100%
+app/modules/strategy/schemas.py         78      0   100%
+app/modules/strategy/service.py        115     91    21%   18-20, 34-48, 52, 56-61, 72-86, 90-105, 114-136, 140-143, 147-151, 162-198, 204-215, 223-239, 248, 261, 265-269
+app/modules/strategy/strategies.py     113     70    38%   26, 31, 40-96, 112-116, 122-130, 136-147, 153-163, 169-177, 247-260
+app/scheduler.py                        52     38    27%   35-91
+app/storage.py                         108      8    93%   6-7, 108, 121, 149, 154, 159, 167
+------------------------------------------------------------------
+TOTAL                                 2003    808    60%
+Coverage XML written to file coverage.xml
+
+=========================== short test summary info ============================
+ERROR tests/test_utils.py::TestMergeCsvTables::test_merge_csv_tables_basic - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+ERROR tests/test_utils.py::TestMergeCsvTables::test_find_table_sections - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+ERROR tests/test_utils.py::TestMergeCsvTables::test_merged_csv_structure - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+FAILED tests/test_config.py::TestSettings::test_default_settings - AssertionError: assert 'testing' == 'development'
+  - development
+  + testing
+FAILED tests/test_utils.py::TestXlsToCsv::test_xls_exists - AssertionError: Тестовый файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+assert False
+ +  where False = <bound method Path.exists of PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')>()
+ +    where <bound method Path.exists of PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls')> = PosixPath('/home/runner/work/rebal/rebal/statement_sign.xls').exists
+FAILED tests/test_utils.py::TestXlsToCsv::test_convert_xls_to_csv_basic - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+FAILED tests/test_utils.py::TestXlsToCsv::test_convert_xls_to_csv_auto_name - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+FAILED tests/test_utils.py::TestXlsToCsv::test_convert_xls_content_validity - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+FAILED tests/test_utils.py::TestXlsToCsv::test_analyze_xls_structure - assert 'строк x' in "\n=== АНАЛИЗ СТРУКТУРЫ ФАЙЛА /home/runner/work/rebal/rebal/statement_sign.xls ===\n❌ Ошибка при анализе файла: [Errno 2] No such file or directory: '/home/runner/work/rebal/rebal/statement_sign.xls'"
+FAILED tests/test_utils.py::TestIntegration::test_full_workflow - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+FAILED tests/test_utils.py::TestIntegration::test_file_sizes_reasonable - FileNotFoundError: Файл /home/runner/work/rebal/rebal/statement_sign.xls не найден
+==================== 8 failed, 81 passed, 3 errors in 4.36s ====================
