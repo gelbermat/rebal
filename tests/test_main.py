@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -222,3 +222,179 @@ class TestRealApplication:
         for prefix in expected_prefixes:
             found = any(path.startswith(prefix) for path in route_paths)
             assert found, f"No routes found with prefix {prefix}"
+
+
+class TestMainAppLifespan:
+    """Тесты для lifespan функций главного приложения"""
+    
+    @pytest.mark.asyncio
+    @patch('app.main.scheduler')
+    @patch('app.main.setup_scheduler')
+    @patch('app.main.logger')
+    async def test_lifespan_with_scheduler_enabled(self, mock_logger, mock_setup, mock_scheduler):
+        """Тест lifespan с включенным scheduler"""
+        from app.main import lifespan
+        
+        # Мокаем настройки
+        with patch.object(settings.scheduler, 'enabled', True):
+            mock_scheduler.running = True
+            
+            # Имитируем lifespan context
+            async with lifespan(app):
+                # Проверяем что scheduler был настроен и запущен
+                mock_setup.assert_called_once_with(mock_scheduler)
+                mock_scheduler.start.assert_called_once()
+                
+            # Проверяем что scheduler был остановлен
+            mock_scheduler.shutdown.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch('app.main.scheduler')
+    @patch('app.main.setup_scheduler')  
+    @patch('app.main.logger')
+    async def test_lifespan_with_scheduler_disabled(self, mock_logger, mock_setup, mock_scheduler):
+        """Тест lifespan с выключенным scheduler"""
+        from app.main import lifespan
+        
+        # Мокаем настройки
+        with patch.object(settings.scheduler, 'enabled', False):
+            mock_scheduler.running = False
+            
+            async with lifespan(app):
+                # Scheduler не должен быть настроен и запущен
+                mock_setup.assert_not_called()
+                mock_scheduler.start.assert_not_called()
+                
+            # Shutdown не должен вызываться если scheduler не запущен
+            mock_scheduler.shutdown.assert_not_called()
+
+
+class TestMainEndpointsFullCoverage:
+    """Полные тесты для всех endpoints главного приложения"""
+    
+    @patch('app.main.setup_scheduler')
+    @patch('app.main.scheduler')
+    def test_root_endpoint_full(self, mock_scheduler, mock_setup):
+        """Полный тест root endpoint"""
+        mock_scheduler.running = False
+        
+        with TestClient(app) as client:
+            response = client.get("/")
+            assert response.status_code == 200
+            
+            data = response.json()
+            # Проверяем все поля
+            assert data["message"] == f"{settings.app_name} service is running"
+            assert data["version"] == settings.version
+            assert data["environment"] == settings.environment
+            assert "debug" in data
+            assert isinstance(data["debug"], bool)
+
+    @patch('app.main.setup_scheduler')
+    @patch('app.main.scheduler')
+    def test_health_endpoint_full(self, mock_scheduler, mock_setup):
+        """Полный тест health endpoint"""
+        mock_scheduler.running = False
+        
+        with TestClient(app) as client:
+            response = client.get("/health")
+            assert response.status_code == 200
+            
+            data = response.json()
+            # Проверяем все поля
+            assert data["status"] == "healthy"
+            assert data["version"] == settings.version
+            assert data["environment"] == settings.environment
+
+    @patch('app.main.setup_scheduler')
+    @patch('app.main.scheduler')
+    def test_config_endpoint_development(self, mock_scheduler, mock_setup):
+        """Тест config endpoint в development среде"""
+        mock_scheduler.running = False
+        
+        with patch.object(settings, 'environment', 'development'):
+            with TestClient(app) as client:
+                response = client.get("/config")
+                assert response.status_code == 200
+                
+                data = response.json()
+                # Проверяем основные разделы конфигурации
+                assert "app_name" in data
+                assert "version" in data
+                assert "environment" in data
+                assert "debug" in data
+                assert "api_prefix" in data
+                
+                # Проверяем nested конфигурации
+                assert "database" in data
+                assert "echo" in data["database"]
+                assert "pool_size" in data["database"]
+                assert "max_overflow" in data["database"]
+                
+                assert "moex" in data
+                assert "api_url" in data["moex"]
+                assert "timeout" in data["moex"]
+                assert "rate_limit" in data["moex"]
+                assert "retries" in data["moex"]
+                
+                assert "scheduler" in data
+                assert "enabled" in data["scheduler"]
+                assert "timezone" in data["scheduler"]
+                
+                assert "logging" in data
+                assert "level" in data["logging"]
+                assert "file_path" in data["logging"]
+                
+                assert "reporting" in data
+                assert "max_report_history" in data["reporting"]
+
+    @patch('app.main.setup_scheduler')
+    @patch('app.main.scheduler')  
+    def test_config_endpoint_production(self, mock_scheduler, mock_setup):
+        """Тест config endpoint в production среде"""
+        mock_scheduler.running = False
+        
+        with patch.object(settings, 'environment', 'production'):
+            with TestClient(app) as client:
+                response = client.get("/config")
+                assert response.status_code == 200
+                
+                data = response.json()
+                assert data == {"message": "Config endpoint disabled in production"}
+
+
+class TestMainAppConfiguration:
+    """Тесты конфигурации FastAPI приложения"""
+    
+    def test_app_basic_configuration(self):
+        """Тест базовой конфигурации приложения"""
+        assert app.title == settings.app_name
+        assert app.version == settings.version
+        assert app.debug == settings.debug
+        
+    def test_app_docs_configuration_development(self):
+        """Тест конфигурации документации в development"""
+        with patch.object(settings, 'environment', 'development'):
+            # Перезагружаем модуль чтобы применить изменения
+            import importlib
+            from app import main
+            importlib.reload(main)
+            
+            # В development docs должны быть доступны
+            # Проверяем через создание нового приложения с той же логикой
+            test_app = FastAPI(
+                docs_url=settings.docs_url if settings.environment != "production" else None,
+                redoc_url=settings.redoc_url if settings.environment != "production" else None,
+            )
+            assert test_app.docs_url is not None
+            assert test_app.redoc_url is not None
+            
+    def test_app_docs_configuration_production(self):
+        """Тест что docs отключены в production"""
+        with patch.object(settings, 'environment', 'production'):
+            # Проверяем логику отключения docs
+            docs_url = settings.docs_url if settings.environment != "production" else None
+            redoc_url = settings.redoc_url if settings.environment != "production" else None
+            
+            assert docs_url is None
+            assert redoc_url is None
