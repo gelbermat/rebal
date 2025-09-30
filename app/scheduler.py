@@ -87,5 +87,5 @@ async def daily_market_data_update():
     finally:
         try:
             await market_service.close()
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Ошибка при закрытии market_service: {e}")
