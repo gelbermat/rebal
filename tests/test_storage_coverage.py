@@ -1,0 +1,481 @@
+"""
+Дополнительные тесты для улучшения покрытия storage.py
+"""
+
+import pytest
+from decimal import Decimal
+from datetime import datetime
+
+from app.storage import DataManager
+from app.modules.marketdata.models import Security, Quote
+from app.modules.portfolio.models import Portfolio, Position
+from app.modules.reporting.models import Transaction, TransactionType
+
+
+class TestDataManagerEdgeCases:
+    """Тесты крайних случаев и непокрытых веток"""
+    
+    @pytest.fixture
+    def data_manager(self):
+        return DataManager()
+    
+    def test_security_exists_empty_store(self, data_manager):
+        """Тест проверки существования ценной бумаги в пустом хранилище"""
+        assert data_manager.security_exists("SBER") is False
+        
+    def test_security_exists_with_data(self, data_manager):
+        """Тест проверки существования ценной бумаги с данными"""
+        security = Security(secid="SBER", name="Сбер", isin="RU0009029540")
+        data_manager.add_security(security)
+        
+        assert data_manager.security_exists("SBER") is True
+        assert data_manager.security_exists("GAZP") is False
+        
+    def test_get_quotes_empty(self, data_manager):
+        """Тест получения котировок для несуществующей ценной бумаги"""
+        quotes = data_manager.get_quotes("NONEXIST")
+        assert quotes == []
+        
+    def test_get_quotes_with_data(self, data_manager):
+        """Тест получения котировок для существующей ценной бумаги"""
+        # Добавляем котировки
+        quote1 = Quote(
+            secid="SBER",
+            timestamp=datetime(2023, 1, 1),
+            price=Decimal("250.00"),
+            volume=Decimal("1000")
+        )
+        quote2 = Quote(
+            secid="SBER", 
+            timestamp=datetime(2023, 1, 2),
+            price=Decimal("255.00"),
+            volume=Decimal("1500")
+        )
+        
+        data_manager.add_quote(quote1)
+        data_manager.add_quote(quote2)
+        
+        quotes = data_manager.get_quotes("SBER")
+        assert len(quotes) == 2
+        
+        # Проверяем что котировки для другой бумаги пустые
+        quotes_empty = data_manager.get_quotes("GAZP")
+        assert quotes_empty == []
+        
+    def test_get_latest_quote_no_data(self, data_manager):
+        """Тест получения последней котировки при отсутствии данных"""
+        latest = data_manager.get_latest_quote("SBER")
+        assert latest is None
+        
+    def test_get_latest_quote_with_data(self, data_manager):
+        """Тест получения последней котировки"""
+        quote1 = Quote(
+            secid="SBER",
+            timestamp=datetime(2023, 1, 1),
+            price=Decimal("250.00"),
+            volume=Decimal("1000")
+        )
+        quote2 = Quote(
+            secid="SBER",
+            timestamp=datetime(2023, 1, 2), 
+            price=Decimal("255.00"),
+            volume=Decimal("1500")
+        )
+        
+        data_manager.add_quote(quote1)
+        data_manager.add_quote(quote2)
+        
+        latest = data_manager.get_latest_quote("SBER")
+        assert latest is not None
+        assert latest.timestamp == datetime(2023, 1, 2)
+        assert latest.price == Decimal("255.00")
+        
+    def test_get_portfolio_nonexistent(self, data_manager):
+        """Тест получения несуществующего портфеля"""
+        portfolio = data_manager.get_portfolio(999)
+        assert portfolio is None
+        
+    def test_get_all_portfolios_empty(self, data_manager):
+        """Тест получения пустого списка портфелей"""
+        portfolios = data_manager.get_all_portfolios()
+        assert portfolios == []
+        
+    def test_get_next_portfolio_id_empty(self, data_manager):
+        """Тест генерации ID портфеля в пустом хранилище"""
+        next_id = data_manager.get_next_portfolio_id()
+        assert next_id == 1
+        
+    def test_get_next_portfolio_id_with_data(self, data_manager):
+        """Тест генерации ID портфеля с существующими данными"""
+        portfolio1 = Portfolio(
+            id=1,
+            name="Test Portfolio 1",
+            description="Test"
+        )
+        portfolio2 = Portfolio(
+            id=5,  # Пропускаем ID для проверки max+1
+            name="Test Portfolio 2", 
+            description="Test"
+        )
+        
+        data_manager.add_portfolio(portfolio1)
+        data_manager.add_portfolio(portfolio2)
+        
+        next_id = data_manager.get_next_portfolio_id()
+        assert next_id == 6  # max(1, 5) + 1
+        
+    def test_get_position_nonexistent(self, data_manager):
+        """Тест получения несуществующей позиции"""
+        position = data_manager.get_position(999)
+        assert position is None
+        
+    def test_get_positions_for_portfolio_empty(self, data_manager):
+        """Тест получения позиций для несуществующего портфеля"""
+        positions = data_manager.get_positions_for_portfolio(999)
+        assert positions == []
+        
+    def test_get_positions_for_portfolio_with_data(self, data_manager):
+        """Тест получения позиций для портфеля с данными"""
+        position1 = Position(
+            id=1,
+            portfolio_id=1,
+            secid="SBER",
+            quantity=100
+        )
+        position2 = Position(
+            id=2,
+            portfolio_id=1,
+            secid="GAZP",
+            quantity=50
+        )
+        position3 = Position(
+            id=3,
+            portfolio_id=2,  # Другой портфель
+            secid="SBER",
+            quantity=200
+        )
+        
+        data_manager.add_position(position1)
+        data_manager.add_position(position2)
+        data_manager.add_position(position3)
+        
+        # Позиции для портфеля 1
+        positions_p1 = data_manager.get_positions_for_portfolio(1)
+        assert len(positions_p1) == 2
+        portfolio_ids = [p.portfolio_id for p in positions_p1]
+        assert all(pid == 1 for pid in portfolio_ids)
+        
+        # Позиции для портфеля 2
+        positions_p2 = data_manager.get_positions_for_portfolio(2)
+        assert len(positions_p2) == 1
+        assert positions_p2[0].portfolio_id == 2
+        
+        # Позиции для несуществующего портфеля
+        positions_empty = data_manager.get_positions_for_portfolio(999)
+        assert positions_empty == []
+        
+    def test_get_all_positions_empty(self, data_manager):
+        """Тест получения пустого списка позиций"""
+        positions = data_manager.get_all_positions()
+        assert positions == []
+        
+    def test_get_next_position_id_empty(self, data_manager):
+        """Тест генерации ID позиции в пустом хранилище"""
+        next_id = data_manager.get_next_position_id()
+        assert next_id == 1
+        
+    def test_get_next_position_id_with_data(self, data_manager):
+        """Тест генерации ID позиции с существующими данными"""
+        position1 = Position(id=1, portfolio_id=1, secid="SBER", quantity=100)
+        position2 = Position(id=10, portfolio_id=1, secid="GAZP", quantity=50)
+        
+        data_manager.add_position(position1)
+        data_manager.add_position(position2)
+        
+        next_id = data_manager.get_next_position_id()
+        assert next_id == 11  # max(1, 10) + 1
+        
+    def test_get_next_security_id_empty(self, data_manager):
+        """Тест генерации ID ценной бумаги в пустом хранилище"""
+        next_id = data_manager.get_next_security_id()
+        assert next_id == 1
+        
+    def test_get_next_security_id_with_data(self, data_manager):
+        """Тест генерации ID ценной бумаги с существующими данными"""
+        security1 = Security(id=1, secid="SBER", name="Сбер", isin="RU0009029540")
+        security2 = Security(id=7, secid="GAZP", name="Газпром", isin="RU0007661625")
+        
+        data_manager.add_security(security1)
+        data_manager.add_security(security2)
+        
+        next_id = data_manager.get_next_security_id()
+        assert next_id == 8  # max(1, 7) + 1
+        
+    def test_get_next_quote_id_empty(self, data_manager):
+        """Тест генерации ID котировки в пустом хранилище"""
+        next_id = data_manager.get_next_quote_id()
+        assert next_id == 1
+        
+    def test_get_next_quote_id_with_data(self, data_manager):
+        """Тест генерации ID котировки с существующими данными"""
+        quote1 = Quote(
+            secid="SBER",
+            timestamp=datetime(2023, 1, 1),
+            price=Decimal("250.00"),
+            volume=Decimal("1000")
+        )
+        quote2 = Quote(
+            secid="SBER",
+            timestamp=datetime(2023, 1, 2),
+            price=Decimal("255.00"),
+            volume=Decimal("1500")
+        )
+        
+        data_manager.add_quote(quote1)
+        data_manager.add_quote(quote2)
+        
+        next_id = data_manager.get_next_quote_id()
+        assert next_id == 1  # Первый ID для quote
+
+
+class TestDataManagerTransactions:
+    """Тесты операций с транзакциями"""
+    
+    @pytest.fixture
+    def data_manager(self):
+        return DataManager()
+        
+    def test_get_transaction_nonexistent(self, data_manager):
+        """Тест получения несуществующей транзакции"""
+        transaction = data_manager.get_transaction(999)
+        assert transaction is None
+        
+    def test_add_and_get_transaction(self, data_manager):
+        """Тест добавления и получения транзакции"""
+        transaction = Transaction(
+            id=1,
+            portfolio_id=1,
+            secid="SBER",
+            transaction_type=TransactionType.BUY,
+            quantity=100,
+            price=Decimal("250.00"),
+            date=datetime(2023, 1, 1)
+        )
+        
+        data_manager.add_transaction(transaction)
+        
+        retrieved = data_manager.get_transaction(1)
+        assert retrieved is not None
+        assert retrieved.id == 1
+        assert retrieved.portfolio_id == 1
+        assert retrieved.secid == "SBER"
+        assert retrieved.transaction_type == TransactionType.BUY
+        
+    def test_get_transactions_for_portfolio_empty(self, data_manager):
+        """Тест получения транзакций для несуществующего портфеля"""
+        transactions = data_manager.get_transactions_for_portfolio(999)
+        assert transactions == []
+        
+    def test_get_transactions_for_portfolio_with_data(self, data_manager):
+        """Тест получения транзакций для портфеля с данными"""
+        transaction1 = Transaction(
+            id=1,
+            portfolio_id=1,
+            secid="SBER",
+            transaction_type=TransactionType.BUY,
+            quantity=100,
+            price=Decimal("250.00"),
+            date=datetime(2023, 1, 1)
+        )
+        transaction2 = Transaction(
+            id=2,
+            portfolio_id=1,
+            secid="GAZP",
+            transaction_type=TransactionType.BUY,
+            quantity=50,
+            price=Decimal("180.00"),
+            date=datetime(2023, 1, 2)
+        )
+        transaction3 = Transaction(
+            id=3,
+            portfolio_id=2,  # Другой портфель
+            secid="SBER",
+            transaction_type=TransactionType.SELL,
+            quantity=25,
+            price=Decimal("260.00"),
+            date=datetime(2023, 1, 3)
+        )
+        
+        data_manager.add_transaction(transaction1)
+        data_manager.add_transaction(transaction2)
+        data_manager.add_transaction(transaction3)
+        
+        # Транзакции для портфеля 1
+        transactions_p1 = data_manager.get_transactions_for_portfolio(1)
+        assert len(transactions_p1) == 2
+        portfolio_ids = [t.portfolio_id for t in transactions_p1]
+        assert all(pid == 1 for pid in portfolio_ids)
+        
+        # Транзакции для портфеля 2
+        transactions_p2 = data_manager.get_transactions_for_portfolio(2)
+        assert len(transactions_p2) == 1
+        assert transactions_p2[0].portfolio_id == 2
+        
+    def test_get_all_transactions_empty(self, data_manager):
+        """Тест получения пустого списка транзакций"""
+        transactions = data_manager.get_all_transactions()
+        assert transactions == []
+        
+    def test_get_all_transactions_with_data(self, data_manager):
+        """Тест получения всех транзакций"""
+        transaction1 = Transaction(
+            id=1,
+            portfolio_id=1,
+            secid="SBER",
+            transaction_type=TransactionType.BUY,
+            quantity=100,
+            price=Decimal("250.00"),
+            date=datetime(2023, 1, 1)
+        )
+        transaction2 = Transaction(
+            id=2,
+            portfolio_id=2,
+            secid="GAZP",
+            transaction_type=TransactionType.SELL,
+            quantity=50,
+            price=Decimal("180.00"),
+            date=datetime(2023, 1, 2)
+        )
+        
+        data_manager.add_transaction(transaction1)
+        data_manager.add_transaction(transaction2)
+        
+        all_transactions = data_manager.get_all_transactions()
+        assert len(all_transactions) == 2
+        
+        ids = [t.id for t in all_transactions]
+        assert 1 in ids
+        assert 2 in ids
+        
+    def test_get_next_transaction_id_empty(self, data_manager):
+        """Тест генерации ID транзакции в пустом хранилище"""
+        next_id = data_manager.get_next_transaction_id()
+        assert next_id == 1
+        
+    def test_get_next_transaction_id_with_data(self, data_manager):
+        """Тест генерации ID транзакции с существующими данными"""
+        transaction1 = Transaction(
+            id=1,
+            portfolio_id=1,
+            secid="SBER",
+            transaction_type=TransactionType.BUY,
+            quantity=100,
+            price=Decimal("250.00"),
+            date=datetime(2023, 1, 1)
+        )
+        transaction2 = Transaction(
+            id=20,
+            portfolio_id=1,
+            secid="GAZP",
+            transaction_type=TransactionType.SELL,
+            quantity=50,
+            price=Decimal("180.00"),
+            date=datetime(2023, 1, 2)
+        )
+        
+        data_manager.add_transaction(transaction1)
+        data_manager.add_transaction(transaction2)
+        
+        next_id = data_manager.get_next_transaction_id()
+        assert next_id == 21  # max(1, 20) + 1
+
+
+class TestDataManagerComplexOperations:
+    """Тесты сложных операций с данными"""
+    
+    @pytest.fixture
+    def data_manager(self):
+        return DataManager()
+        
+    def test_data_consistency_across_operations(self, data_manager):
+        """Тест согласованности данных при различных операциях"""
+        # Добавляем ценную бумагу
+        security = Security(id=1, secid="SBER", name="Сбер", isin="RU0009029540")
+        data_manager.add_security(security)
+        
+        # Добавляем котировки
+        quote = Quote(
+            secid="SBER",
+            timestamp=datetime(2023, 1, 1),
+            price=Decimal("250.00"),
+            volume=Decimal("1000")
+        )
+        data_manager.add_quote(quote)
+        
+        # Добавляем портфель
+        portfolio = Portfolio(id=1, name="Test Portfolio", description="Test")
+        data_manager.add_portfolio(portfolio)
+        
+        # Добавляем позицию
+        position = Position(id=1, portfolio_id=1, secid="SBER", quantity=100)
+        data_manager.add_position(position)
+        
+        # Добавляем транзакцию
+        transaction = Transaction(
+            id=1,
+            portfolio_id=1,
+            secid="SBER",
+            transaction_type=TransactionType.BUY,
+            quantity=100,
+            price=Decimal("250.00"),
+            date=datetime(2023, 1, 1)
+        )
+        data_manager.add_transaction(transaction)
+        
+        # Проверяем что все данные связаны корректно
+        assert data_manager.security_exists("SBER")
+        assert len(data_manager.get_quotes("SBER")) == 1
+        assert len(data_manager.get_all_portfolios()) == 1
+        assert len(data_manager.get_positions_for_portfolio(1)) == 1
+        assert len(data_manager.get_transactions_for_portfolio(1)) == 1
+        
+        # Проверяем генерацию следующих ID
+        assert data_manager.get_next_security_id() == 2
+        assert data_manager.get_next_quote_id() == 2
+        assert data_manager.get_next_portfolio_id() == 2
+        assert data_manager.get_next_position_id() == 2
+        assert data_manager.get_next_transaction_id() == 2
+        
+    def test_large_datasets(self, data_manager):
+        """Тест работы с большими объемами данных"""
+        # Добавляем много ценных бумаг
+        for i in range(100):
+            security = Security(
+                id=i + 1,
+                secid=f"SEC{i:03d}",
+                name=f"Security {i}",
+                isin=f"RU{i:010d}"
+            )
+            data_manager.add_security(security)
+            
+        # Проверяем что все добавились
+        assert len(data_manager.get_all_securities()) == 100
+        assert data_manager.get_next_security_id() == 101
+        
+        # Добавляем много котировок для одной бумаги
+        for i in range(50):
+            quote = Quote(
+                id=i + 1,
+                secid="SEC000",
+                date=datetime(2023, 1, i + 1),
+                close=Decimal(f"{250 + i}.00"),
+                volume=1000 + i * 10
+            )
+            data_manager.add_quote(quote)
+            
+        quotes = data_manager.get_quotes("SEC000")
+        assert len(quotes) == 50
+        
+        latest = data_manager.get_latest_quote("SEC000")
+        assert latest.date == datetime(2023, 1, 50)
+        assert latest.close == Decimal("299.00")

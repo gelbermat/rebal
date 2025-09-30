@@ -2,11 +2,10 @@ import os
 from typing import Optional, List
 from pathlib import Path
 
-from pydantic import Field, validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, Field, validator
 
 
-class DatabaseSettings(BaseSettings):
+class DatabaseSettings(BaseModel):
     """Настройки базы данных"""
 
     url: str = Field(
@@ -18,7 +17,7 @@ class DatabaseSettings(BaseSettings):
     max_overflow: int = Field(default=20, description="Максимальное переполнение пула")
 
 
-class MOEXSettings(BaseSettings):
+class MOEXSettings(BaseModel):
     """Настройки MOEX API"""
 
     api_url: str = Field(default="https://iss.moex.com", description="URL MOEX API")
@@ -33,7 +32,7 @@ class MOEXSettings(BaseSettings):
         return v
 
 
-class BrokerSettings(BaseSettings):
+class BrokerSettings(BaseModel):
     """Настройки брокера"""
 
     api_url: Optional[str] = Field(default=None, description="URL API брокера")
@@ -43,7 +42,7 @@ class BrokerSettings(BaseSettings):
     sandbox_mode: bool = Field(default=True, description="Режим песочницы")
 
 
-class SchedulerSettings(BaseSettings):
+class SchedulerSettings(BaseModel):
     """Настройки планировщика"""
 
     enabled: bool = Field(default=True, description="Включить планировщик")
@@ -97,7 +96,7 @@ class SchedulerSettings(BaseSettings):
             return f"{self.market_data_sync_minute_business} {self.market_data_sync_hour_business} * * 1-5"
 
 
-class LoggingSettings(BaseSettings):
+class LoggingSettings(BaseModel):
     """Настройки логирования"""
 
     level: str = Field(default="INFO", description="Уровень логирования")
@@ -121,7 +120,7 @@ class LoggingSettings(BaseSettings):
         return v.upper()
 
 
-class SecuritySettings(BaseSettings):
+class SecuritySettings(BaseModel):
     """Настройки безопасности"""
 
     secret_key: str = Field(
@@ -137,7 +136,7 @@ class SecuritySettings(BaseSettings):
     )
 
 
-class ReportingSettings(BaseSettings):
+class ReportingSettings(BaseModel):
     """Настройки модуля отчетности"""
 
     max_report_history: int = Field(
@@ -150,7 +149,7 @@ class ReportingSettings(BaseSettings):
     cache_ttl_minutes: int = Field(default=15, description="TTL кэша отчетов в минутах")
 
 
-class Settings(BaseSettings):
+class Settings(BaseModel):
     """Основные настройки приложения"""
 
     # Основные настройки
