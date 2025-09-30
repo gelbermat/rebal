@@ -20,7 +20,7 @@ from .schemas import (
 from .models import TransactionType
 
 
-router = APIRouter(prefix="/reporting", tags=["reporting"])
+router = APIRouter()
 
 
 def get_reporting_service(

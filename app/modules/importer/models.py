@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 from decimal import Decimal
 
 
@@ -35,21 +35,21 @@ class BrokerStatement:
     """Брокерский отчет с позициями портфеля"""
 
     account_number: str  # Номер счета
-    positions: list[SecurityPosition]  # Список позиций
+    positions: List[SecurityPosition]  # Список позиций
     statement_date: Optional[str] = None  # Дата отчета
 
     @property
-    def bonds(self) -> list[SecurityPosition]:
+    def bonds(self) -> List[SecurityPosition]:
         """Возвращает только облигации"""
         return [pos for pos in self.positions if pos.is_bond]
 
     @property
-    def stocks(self) -> list[SecurityPosition]:
+    def stocks(self) -> List[SecurityPosition]:
         """Возвращает только акции"""
         return [pos for pos in self.positions if pos.is_stock]
 
     @property
-    def etfs(self) -> list[SecurityPosition]:
+    def etfs(self) -> List[SecurityPosition]:
         """Возвращает только ETF"""
         return [pos for pos in self.positions if pos.is_etf]
 

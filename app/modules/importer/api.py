@@ -11,7 +11,7 @@ from .schemas import (
 from .models import BrokerStatement, SecurityPosition
 
 
-router = APIRouter(prefix="/import", tags=["import"])
+router = APIRouter()
 
 
 def get_import_service() -> ImportService:

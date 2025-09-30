@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from decimal import Decimal
 
 
@@ -26,7 +26,7 @@ class BrokerStatementResponse(BaseModel):
     bonds_count: int = Field(..., description="Количество облигаций")
     stocks_count: int = Field(..., description="Количество акций")
     etfs_count: int = Field(..., description="Количество ETF")
-    positions: list[SecurityPositionResponse] = Field(..., description="Список позиций")
+    positions: List[SecurityPositionResponse] = Field(..., description="Список позиций")
 
 
 class ImportStatisticsResponse(BaseModel):
@@ -38,5 +38,5 @@ class ImportStatisticsResponse(BaseModel):
         ..., description="Количество импортированных позиций"
     )
     skipped_positions: int = Field(..., description="Количество пропущенных позиций")
-    errors: list[str] = Field(default_factory=list, description="Список ошибок")
+    errors: List[str] = Field(default_factory=list, description="Список ошибок")
     message: str = Field(..., description="Сообщение о результате")

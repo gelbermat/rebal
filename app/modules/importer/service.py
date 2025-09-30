@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-from typing import Optional
+from typing import Optional, List
 from io import BytesIO
 from pathlib import Path
 
@@ -88,7 +88,7 @@ class BrokerStatementParser:
         except Exception:
             return "UNKNOWN"
 
-    def _extract_positions(self) -> list[SecurityPosition]:
+    def _extract_positions(self) -> List[SecurityPosition]:
         """Извлекает позиции ценных бумаг из отчета"""
         positions = []
 
@@ -102,7 +102,7 @@ class BrokerStatementParser:
 
         return positions
 
-    def _extract_bonds(self) -> list[SecurityPosition]:
+    def _extract_bonds(self) -> List[SecurityPosition]:
         """Извлекает облигации из отчета"""
         positions = []
 
@@ -139,7 +139,7 @@ class BrokerStatementParser:
 
         return positions
 
-    def _extract_stocks_and_etfs(self) -> list[SecurityPosition]:
+    def _extract_stocks_and_etfs(self) -> List[SecurityPosition]:
         """Извлекает акции и ETF из отчета"""
         positions = []
 

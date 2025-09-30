@@ -24,7 +24,7 @@ def get_strategy_service() -> StrategyService:
     return StrategyService(data_manager, market_data_service)
 
 
-router = APIRouter(tags=["strategies"])
+router = APIRouter()
 
 
 @router.post("/", response_model=StrategyResponse)
