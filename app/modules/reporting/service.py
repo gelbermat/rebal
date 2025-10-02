@@ -525,7 +525,7 @@ class ReportingService:
             
             # Получаем текущую цену
             latest_quote = self.data_manager.get_latest_quote(position.secid)
-            current_price = latest_quote.close_price if latest_quote else position.avg_price
+            current_price = latest_quote.price if latest_quote else position.avg_price
             
             if current_price and position.avg_price:
                 market_value = position.quantity * current_price
@@ -549,7 +549,7 @@ class ReportingService:
                     "current_price": float(current_price),
                     "market_value": float(market_value),
                     "pnl": float(pnl),
-                    "pnl_percent": float((pnl / (position.avg_price * position.quantity) * 100)) if position.avg_price else 0.0
+                    "pnl_percent": float((pnl / (position.avg_price * position.quantity) * 100)) if position.avg_price and position.quantity != 0 else 0.0
                 }
                 assets.append(asset_info)
         

@@ -240,7 +240,7 @@ async def get_transaction_volume_analytics(
 
 @router.get("/reports/json")
 async def get_portfolio_report_json(
-    portfolio_id: int = 1,
+    portfolio_id: int = Query(..., description="ID портфеля"),
     reporting_service: ReportingService = Depends(get_reporting_service),
 ):
     """
@@ -259,13 +259,15 @@ async def get_portfolio_report_json(
                 detail=f"Portfolio with id {portfolio_id} not found"
             )
         return report
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 
 @router.get("/reports/pdf")
 async def generate_portfolio_report_pdf(
-    portfolio_id: int = 1,
+    portfolio_id: int = Query(..., description="ID портфеля"),
     reporting_service: ReportingService = Depends(get_reporting_service),
 ):
     """
@@ -281,5 +283,7 @@ async def generate_portfolio_report_pdf(
                 detail=f"Portfolio with id {portfolio_id} not found"
             )
         return {"file_path": file_path, "message": "PDF report generated successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating PDF report: {str(e)}")
