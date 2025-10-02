@@ -496,3 +496,238 @@ class ReportingService:
         metrics["total_pnl"] = total_realized_pnl + total_unrealized_pnl
 
         return metrics
+
+    async def generate_portfolio_json_report(self, portfolio_id: int) -> Optional[Dict[str, Any]]:
+        """
+        Генерация JSON-отчёта по портфелю.
+        
+        Возвращает:
+        - Список активов с количеством, средней ценой, текущей ценой, PnL по каждому
+        - Суммарную стоимость портфеля и общий PnL
+        - Долю акций и облигаций
+        """
+        portfolio = self.data_manager.get_portfolio(portfolio_id)
+        if not portfolio:
+            return None
+            
+        positions = self.data_manager.get_positions_for_portfolio(portfolio_id)
+        
+        assets = []
+        total_portfolio_value = Decimal("0")
+        total_pnl = Decimal("0")
+        stocks_value = Decimal("0")
+        bonds_value = Decimal("0")
+        
+        for position in positions:
+            # Получаем информацию о бумаге
+            security = self.data_manager.get_security(position.secid)
+            security_name = security.name if security else position.secid
+            
+            # Получаем текущую цену
+            latest_quote = self.data_manager.get_latest_quote(position.secid)
+            current_price = latest_quote.close_price if latest_quote else position.avg_price
+            
+            if current_price and position.avg_price:
+                market_value = position.quantity * current_price
+                pnl = (current_price - position.avg_price) * position.quantity
+                
+                total_portfolio_value += market_value
+                total_pnl += pnl
+                
+                # Классификация активов (упрощенная логика по названию)
+                # Акции обычно имеют короткие коды, облигации - длинные с цифрами
+                if len(position.secid) <= 4 and not any(c.isdigit() for c in position.secid):
+                    stocks_value += market_value
+                else:
+                    bonds_value += market_value
+                
+                asset_info = {
+                    "secid": position.secid,
+                    "name": security_name,
+                    "quantity": float(position.quantity),
+                    "avg_price": float(position.avg_price) if position.avg_price else 0.0,
+                    "current_price": float(current_price),
+                    "market_value": float(market_value),
+                    "pnl": float(pnl),
+                    "pnl_percent": float((pnl / (position.avg_price * position.quantity) * 100)) if position.avg_price else 0.0
+                }
+                assets.append(asset_info)
+        
+        # Расчет долей
+        stocks_percent = float(stocks_value / total_portfolio_value * 100) if total_portfolio_value > 0 else 0.0
+        bonds_percent = float(bonds_value / total_portfolio_value * 100) if total_portfolio_value > 0 else 0.0
+        
+        return {
+            "portfolio_id": portfolio_id,
+            "portfolio_name": portfolio.name,
+            "generated_at": datetime.now().isoformat(),
+            "assets": assets,
+            "summary": {
+                "total_portfolio_value": float(total_portfolio_value),
+                "total_pnl": float(total_pnl),
+                "total_pnl_percent": float(total_pnl / (total_portfolio_value - total_pnl) * 100) if (total_portfolio_value - total_pnl) > 0 else 0.0,
+                "assets_count": len(assets)
+            },
+            "asset_allocation": {
+                "stocks": {
+                    "value": float(stocks_value),
+                    "percent": stocks_percent
+                },
+                "bonds": {
+                    "value": float(bonds_value),
+                    "percent": bonds_percent
+                }
+            }
+        }
+
+    async def generate_portfolio_pdf_report(self, portfolio_id: int) -> Optional[str]:
+        """
+        Генерация PDF-отчёта по портфелю.
+        
+        Сохраняет файл в папку /reports с именем вида report_<YYYY-MM-DD>.pdf
+        Возвращает путь к созданному файлу.
+        """
+        import os
+        from datetime import date
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.pdfbase import pdfutils
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.pdfbase import pdfmetrics
+        
+        portfolio = self.data_manager.get_portfolio(portfolio_id)
+        if not portfolio:
+            return None
+            
+        # Создаем папку reports если её нет
+        reports_dir = "reports"
+        if not os.path.exists(reports_dir):
+            os.makedirs(reports_dir)
+            
+        # Генерируем имя файла
+        today = date.today()
+        filename = f"report_{today.strftime('%Y-%m-%d')}.pdf"
+        file_path = os.path.join(reports_dir, filename)
+        
+        # Получаем данные для отчета
+        json_data = await self.generate_portfolio_json_report(portfolio_id)
+        if not json_data:
+            return None
+        
+        # Создаем PDF документ
+        doc = SimpleDocTemplate(file_path, pagesize=A4)
+        story = []
+        styles = getSampleStyleSheet()
+        
+        # Заголовок отчета
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=30,
+            alignment=1  # CENTER
+        )
+        
+        story.append(Paragraph(f"Отчет по портфелю: {json_data['portfolio_name']}", title_style))
+        story.append(Paragraph(f"Дата создания: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+        story.append(Spacer(1, 20))
+        
+        # Сводная информация
+        story.append(Paragraph("Сводная информация", styles['Heading2']))
+        summary_data = [
+            ['Показатель', 'Значение'],
+            ['Общая стоимость портфеля', f"{json_data['summary']['total_portfolio_value']:.2f} ₽"],
+            ['Общий P&L', f"{json_data['summary']['total_pnl']:.2f} ₽"],
+            ['P&L в процентах', f"{json_data['summary']['total_pnl_percent']:.2f}%"],
+            ['Количество активов', str(json_data['summary']['assets_count'])],
+        ]
+        
+        summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(summary_table)
+        story.append(Spacer(1, 20))
+        
+        # Распределение активов
+        story.append(Paragraph("Распределение активов", styles['Heading2']))
+        allocation_data = [
+            ['Тип актива', 'Стоимость', 'Доля'],
+            ['Акции', f"{json_data['asset_allocation']['stocks']['value']:.2f} ₽", 
+             f"{json_data['asset_allocation']['stocks']['percent']:.1f}%"],
+            ['Облигации', f"{json_data['asset_allocation']['bonds']['value']:.2f} ₽", 
+             f"{json_data['asset_allocation']['bonds']['percent']:.1f}%"],
+        ]
+        
+        allocation_table = Table(allocation_data, colWidths=[2*inch, 2*inch, 1.5*inch])
+        allocation_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(allocation_table)
+        story.append(Spacer(1, 20))
+        
+        # Детализация позиций
+        story.append(Paragraph("Детализация позиций", styles['Heading2']))
+        
+        positions_data = [
+            ['Код', 'Название', 'Кол-во', 'Ср. цена', 'Тек. цена', 'Стоимость', 'P&L', 'P&L%']
+        ]
+        
+        for asset in json_data['assets']:
+            positions_data.append([
+                asset['secid'],
+                asset['name'][:20] + '...' if len(asset['name']) > 20 else asset['name'],
+                f"{asset['quantity']:.0f}",
+                f"{asset['avg_price']:.2f}",
+                f"{asset['current_price']:.2f}",
+                f"{asset['market_value']:.0f}",
+                f"{asset['pnl']:.0f}",
+                f"{asset['pnl_percent']:.1f}%"
+            ])
+        
+        positions_table = Table(positions_data, colWidths=[0.7*inch, 1.5*inch, 0.6*inch, 0.7*inch, 0.7*inch, 0.8*inch, 0.7*inch, 0.6*inch])
+        positions_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            # Выделяем убыточные позиции красным цветом
+        ]))
+        
+        # Добавляем цветовое выделение для убыточных позиций
+        for i, asset in enumerate(json_data['assets'], 1):
+            if asset['pnl'] < 0:
+                positions_table.setStyle(TableStyle([
+                    ('TEXTCOLOR', (6, i), (7, i), colors.red),
+                ]))
+        
+        story.append(positions_table)
+        
+        # Строим PDF
+        doc.build(story)
+        
+        return file_path

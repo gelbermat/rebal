@@ -236,3 +236,50 @@ async def get_transaction_volume_analytics(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/reports/json")
+async def get_portfolio_report_json(
+    portfolio_id: int = 1,
+    reporting_service: ReportingService = Depends(get_reporting_service),
+):
+    """
+    Получить JSON-отчёт по текущему состоянию портфеля.
+    
+    Возвращает:
+    - Список активов с количеством, средней ценой, текущей ценой, PnL по каждому
+    - Суммарную стоимость портфеля и общий PnL
+    - Долю акций и облигаций
+    """
+    try:
+        report = await reporting_service.generate_portfolio_json_report(portfolio_id)
+        if not report:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Portfolio with id {portfolio_id} not found"
+            )
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
+
+
+@router.get("/reports/pdf")
+async def generate_portfolio_report_pdf(
+    portfolio_id: int = 1,
+    reporting_service: ReportingService = Depends(get_reporting_service),
+):
+    """
+    Сгенерировать PDF-отчёт по портфелю и вернуть путь к файлу.
+    
+    Сохраняет файл в папку /reports с именем вида report_<YYYY-MM-DD>.pdf
+    """
+    try:
+        file_path = await reporting_service.generate_portfolio_pdf_report(portfolio_id)
+        if not file_path:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Portfolio with id {portfolio_id} not found"
+            )
+        return {"file_path": file_path, "message": "PDF report generated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating PDF report: {str(e)}")
